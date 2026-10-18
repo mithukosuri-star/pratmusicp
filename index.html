@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06060b">
+<meta name="description" content="PratMusic — a beautiful offline music player with bundled open-licensed music, your own uploads and a live audio visualizer.">
+<title>PratMusic — Offline Music</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ambient aurora backdrop, recoloured by whatever is playing -->
+<div id="aurora" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i></div>
+<div id="grain" aria-hidden="true"></div>
+
+<!-- ───────────── sidebar ───────────── -->
+<aside id="side">
+  <div class="brand">
+    <svg viewBox="0 0 48 48" class="logo" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--acc)"/><stop offset="1" stop-color="var(--acc2)"/></linearGradient></defs>
+      <path d="M24 8 L40 38 L8 38 Z" fill="none" stroke="url(#lg)" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M2 24 H18" stroke="#fff" stroke-width="1.8"/>
+      <path d="M28 26 L46 20" stroke="#ff3b6b" stroke-width="1.6"/>
+      <path d="M28 27 L46 26" stroke="#ffb020" stroke-width="1.6"/>
+      <path d="M28 28 L46 32" stroke="#3bff8e" stroke-width="1.6"/>
+      <path d="M28 29 L46 38" stroke="#20c4ff" stroke-width="1.6"/>
+    </svg>
+    <div class="brand-txt"><b class="brandname">PRATMUSIC</b><span>offline music</span></div>
+  </div>
+
+  <nav id="nav">
+    <button class="nav-btn active" data-view="home"    title="Home (1)"><svg viewBox="0 0 24 24"><path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
+    <button class="nav-btn" data-view="library" title="Library (2)"><svg viewBox="0 0 24 24"><path d="M4 4h3v16H4zM9.5 4h3v16h-3zM15 5.5l4-1 3.5 14.6-4 1z"/></svg><span>Library</span></button>
+    <button class="nav-btn" data-view="favs"    title="Favorites (3)"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.7-9.7-9C.7 8.6 2.6 5 6.1 5c2 0 3.4 1.1 4.2 2.4h1.4C12.5 6.1 13.9 5 15.9 5c3.5 0 5.4 3.6 3.8 7-2.2 4.3-9.7 9-9.7 9z"/></svg><span>Favorites</span></button>
+    <button class="nav-btn" data-view="uploads" title="Your music (4)"><svg viewBox="0 0 24 24"><path d="M12 3v10m0-10 4 4m-4-4L8 7M4 13v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/></svg><span>Your music</span></button>
+    <button class="nav-btn" data-view="credits" title="Credits & licences (5)"><svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm9 0v5h5M9 13h7M9 17h7"/></svg><span>Credits</span></button>
+  </nav>
+
+  <div class="side-sec"><span class="side-label">Genres</span><div id="genreChips"></div></div>
+
+  <div class="side-foot">
+    <div class="badge" id="offlineBadge"><i></i><span>checking…</span></div>
+    <button id="installBtn" class="ghost hidden"> &nbsp;Install app</button>
+    <div class="tiny" id="libStats"></div>
+  </div>
+</aside>
+
+<!-- ───────────── main ───────────── -->
+<main id="main">
+  <header id="topbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Search titles, artists, albums…   press /" autocomplete="off">
+      <button id="clearSearch" class="icon-btn sm hidden" title="Clear">✕</button>
+    </div>
+    <div class="top-actions">
+      <button id="addFolderBtn" class="ghost" title="Import a whole folder">📁 folder</button>
+      <button id="addMusicBtn" class="ghost" title="Import audio files">＋ add music</button>
+      <input type="file" id="filePick" hidden multiple accept="audio/*,.mp3,.m4a,.flac,.wav,.ogg,.opus,.aac">
+      <button id="helpBtn" class="icon-btn" title="Keyboard shortcuts (?)">?</button>
+    </div>
+  </header>
+  <section id="view" aria-live="polite"></section>
+</main>
+
+<!-- ───────────── queue drawer ───────────── -->
+<aside id="queue" class="drawer" aria-label="Queue">
+  <div class="drawer-head"><h3>Up next</h3><span class="tiny" id="queueCount"></span><button id="closeQueue" class="icon-btn" title="Close">✕</button></div>
+  <ol id="queueList"></ol>
+  <div class="drawer-foot"><button id="clearQueue" class="ghost">Clear queue</button></div>
+</aside>
+
+<!-- ───────────── player bar ───────────── -->
+<footer id="player">
+  <div class="p-left">
+    <button id="npOpen" class="cover-wrap" title="Open now playing">
+      <img id="pCover" alt="" draggable="false">
+      <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </button>
+    <div class="p-meta">
+      <div id="pTitle" class="p-title">Nothing playing</div>
+      <div id="pArtist" class="p-artist">pick a track to start</div>
+    </div>
+    <button id="pFav" class="icon-btn heart" title="Favorite (F)">♡</button>
+  </div>
+
+  <div class="p-center">
+    <div class="p-btns">
+      <button id="shuffleBtn" class="icon-btn" title="Shuffle (S)"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+      <button id="prevBtn" class="icon-btn" title="Previous (P)"><svg viewBox="0 0 24 24"><path d="M19 20 9 12l10-8zM7 4v16"/></svg></button>
+      <button id="playBtn" class="play-btn" title="Play / pause (Space)"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M7 4h3.4v16H7zM13.6 4H17v16h-3.4z"/></svg></button>
+      <button id="nextBtn" class="icon-btn" title="Next (N)"><svg viewBox="0 0 24 24"><path d="m5 4 10 8-10 8zM17 4v16"/></svg></button>
+      <button id="repeatBtn" class="icon-btn" title="Repeat (R)"><svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg><em id="repeatTag">1</em></button>
+    </div>
+    <div class="p-seek">
+      <span id="tCur">0:00</span>
+      <div class="seek-wrap"><input id="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek"><div class="seek-fill"></div></div>
+      <span id="tDur">0:00</span>
+    </div>
+  </div>
+
+  <div class="p-right">
+    <span id="sleepChip" class="chip hidden" title="Sleep timer"></span>
+    <button id="sleepBtn" class="icon-btn" title="Sleep timer"><svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></button>
+    <button id="vizBtn" class="icon-btn" title="Visualizer mode (V)"><svg viewBox="0 0 24 24"><path d="M3 12h2m2-5v10m4-14v18m4-13v8m4-11v14m4-9h2"/></svg></button>
+    <button id="queueBtn" class="icon-btn" title="Queue (Q)"><svg viewBox="0 0 24 24"><path d="M4 6h11M4 12h11M4 18h7M18 8v10m0 0 3-3m-3 3-3-3"/></svg></button>
+    <div class="vol">
+      <button id="muteBtn" class="icon-btn" title="Mute (M)"><svg class="i-vol" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg><svg class="i-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6"/></svg></button>
+      <div class="seek-wrap slim"><input id="vol" type="range" min="0" max="100" value="85" aria-label="Volume"><div class="seek-fill"></div></div>
+    </div>
+    <button id="settingsBtn" class="icon-btn" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10 2.1 2.1M19.1 4.9 17 7m-10 10-2.1 2.1"/></svg></button>
+  </div>
+</footer>
+
+<!-- settings popover -->
+<div id="settingsPop" class="pop hidden">
+  <h4>Playback</h4>
+  <label class="row"><span>Crossfade</span>
+    <select id="xfadeSel"><option value="0">Off</option><option value="2">2 s</option><option value="4" selected>4 s</option><option value="8">8 s</option></select></label>
+  <label class="row"><span>Visualizer</span>
+    <select id="vizSel"><option value="0">Spectrum bars</option><option value="1">Radial bloom</option><option value="2">Oscilloscope</option></select></label>
+  <label class="row chk"><span>Resume where I left off</span><input type="checkbox" id="resumeChk" checked></label>
+  <h4>Sleep timer</h4>
+  <div class="chips" id="sleepOpts">
+    <button data-min="0">Off</button><button data-min="15">15 m</button><button data-min="30">30 m</button><button data-min="45">45 m</button><button data-min="60">60 m</button>
+  </div>
+  <div class="tiny pad">Everything runs from this device — no accounts, no network needed.</div>
+</div>
+
+<!-- sleep popover anchor handled by settingsPop -->
+
+<!-- ───────────── now playing (full screen) ───────────── -->
+<div id="np" class="np hidden">
+  <div class="np-bg"><img id="npBlur" alt=""></div>
+  <canvas id="viz"></canvas>
+  <button id="npClose" class="icon-btn lg" title="Close (Esc)">▾</button>
+  <div class="np-main">
+    <div class="np-art">
+      <div class="np-cover-tilt"><img id="npCover" alt="album art" draggable="false"><div class="np-shine"></div></div>
+      <div class="np-disc" aria-hidden="true"></div>
+    </div>
+    <div class="np-info">
+      <div class="np-kicker"><span id="npGenre"></span><span class="dot">•</span><span id="npYear"></span><span class="dot">•</span><span id="npAlbum"></span></div>
+      <h2 id="npTitle"></h2>
+      <div id="npArtist"></div>
+      <div class="np-mood" id="npMood"></div>
+      <div class="p-seek big">
+        <span id="npCur">0:00</span>
+        <div class="seek-wrap"><input id="npSeek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek"><div class="seek-fill"></div></div>
+        <span id="npDur">0:00</span>
+      </div>
+      <div class="p-btns big">
+        <button id="npShuffle" class="icon-btn"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+        <button id="npPrev" class="icon-btn"><svg viewBox="0 0 24 24"><path d="M19 20 9 12l10-8zM7 4v16"/></svg></button>
+        <button id="npPlay" class="play-btn xl"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M7 4h3.4v16H7zM13.6 4H17v16h-3.4z"/></svg></button>
+        <button id="npNext" class="icon-btn"><svg viewBox="0 0 24 24"><path d="m5 4 10 8-10 8zM17 4v16"/></svg></button>
+        <button id="npRepeat" class="icon-btn"><svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg><em id="npRepeatTag">1</em></button>
+        <button id="npFav" class="icon-btn heart xl-h"><span>♡</span></button>
+      </div>
+      <div class="np-credit"><span id="npLicence"></span><a id="npSource" target="_blank" rel="noopener">source ↗</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- help modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <button id="modalClose" class="icon-btn">✕</button>
+    <h3>Keyboard shortcuts</h3>
+    <div class="keys">
+      <div><kbd>Space</kbd><span>play / pause</span></div><div><kbd>←</kbd><kbd>→</kbd><span>seek 10 s</span></div>
+      <div><kbd>↑</kbd><kbd>↓</kbd><span>volume</span></div><div><kbd>N</kbd><kbd>P</kbd><span>next / previous</span></div>
+      <div><kbd>S</kbd><span>shuffle</span></div><div><kbd>R</kbd><span>repeat mode</span></div>
+      <div><kbd>F</kbd><span>favorite</span></div><div><kbd>M</kbd><span>mute</span></div>
+      <div><kbd>Q</kbd><span>queue</span></div><div><kbd>V</kbd><span>visualizer mode</span></div>
+      <div><kbd>/</kbd><span>search</span></div><div><kbd>1</kbd>–<kbd>5</kbd><span>switch view</span></div>
+      <div><kbd>Enter</kbd><span>open now playing</span></div><div><kbd>Esc</kbd><span>close overlays</span></div>
+    </div>
+    <h3>About PratMusic</h3>
+    <p class="tiny">PratMusic is a fully offline player: the bundled catalogue (open-licensed tracks from the Internet Archive) and anything you import are stored on this device. Install it as an app and it keeps working with zero connectivity.</p>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<div id="dropHint" class="hidden"><div><b>Drop audio files</b><span>they'll be stored offline in this browser</span></div></div>
+
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

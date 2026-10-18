@@ -1,0 +1,22 @@
+{
+  "name": "PratMusic — Offline Music",
+  "short_name": "PratMusic",
+  "description": "A beautiful offline music player. Bundled open-licensed music, your own uploads, live visualizer, zero network required.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06060b",
+  "theme_color": "#06060b",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Open Library", "url": "./index.html#library" },
+    { "name": "Favorites", "url": "./index.html#favs" }
+  ]
+}

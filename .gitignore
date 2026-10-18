@@ -1,0 +1,4 @@
+# audio is regenerable: python3 tools/build_library.py  (keeps the repo small)
+media/
+__pycache__/
+*.zip
